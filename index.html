@@ -1,26 +1,27 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0e1619">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>ハモりキー</title>
 <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e1619">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ハモりキー">
 <meta name="format-detection" content="telephone=no">
-<link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>ハモりキー（声）</title>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<script>if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.documentElement.dataset.theme='dark'</script>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#eef1ee;--panel:#fff;--ink:#17252a;--mute:#5d6d72;--acc:#0f8b8d;--har:#d6336c;--line:#cfd8d6;color-scheme:light;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1619;--panel:#162126;--ink:#e8efee;--mute:#8fa3a7;--acc:#43d0c4;--har:#ff6f9c;--line:#263840;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0e1619;--panel:#162126;--ink:#e8efee;--mute:#8fa3a7;--acc:#43d0c4;--har:#ff6f9c;--line:#263840;color-scheme:dark}
-html{height:100%}
-html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
-body{position:fixed;inset:0;height:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-@media (display-mode:standalone),(display-mode:fullscreen){body{background:var(--bg)}}
+html{height:100%;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+:root{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+body{overscroll-behavior:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+input,select{user-select:auto;-webkit-user-select:auto}
 body{height:100%;margin:0;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:14px/1.5 "M PLUS Rounded 1c",system-ui,sans-serif}
 header{display:flex;justify-content:space-between;align-items:baseline;padding:8px 14px;gap:10px}
 h1{font-size:17px;margin:0;white-space:nowrap}
@@ -43,6 +44,7 @@ input[type=range]{flex:1;min-width:80px;accent-color:var(--acc)}
 .cb{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 0;font:700 14px inherit;overflow:hidden}
 .cb.act{background:var(--har);color:#fff;border-color:var(--har)}
 #prev{width:160px;height:120px;image-rendering:pixelated;border-radius:8px;background:#000;flex:none}
+#selDev,#selOut{flex:1;min-width:0}
 .hint{font-size:12px;color:var(--mute);margin:2px 0}
 #kbwrap{flex:none;height:min(34%,260px);display:flex;flex-direction:column;padding:0 6px 6px}
 .oct{display:flex;gap:6px;justify-content:flex-end;padding:2px 0}
@@ -57,10 +59,16 @@ input[type=range]{flex:1;min-width:80px;accent-color:var(--acc)}
 </style></head><body>
 <header><h1>ハモりキー</h1><span id="read">マイクを開始すると声にハモりが付きます</span></header>
 <main>
-<section><h2>声の入力（イヤホンのマイク）</h2>
-<div class="row"><button id="mic" class="big">マイク開始</button><select id="selDev"><option value="">既定の入力</option></select></div>
-<div class="row"><label>原声</label><input type="range" id="dry" max="100" value="40"><label>ハモり</label><input type="range" id="hv" max="100" value="80"></div>
-<div class="hint" id="micMsg">イヤホン推奨（スピーカーだとハウリング）。Bluetoothは遅延が増えます。声のフォルマントは保ったまま音程だけ変えます（PSOLA）。</div></section>
+<section><h2>音源・入出力</h2>
+<div class="row"><label>音源</label><div class="seg" data-k="src"><button data-v="mic">マイク</button><button data-v="smp">サンプル</button><button data-v="sine">サイン波</button><button data-v="saw">ノコギリ波</button></div></div>
+<div class="row" id="rowMic"><label>入力</label><select id="selDev"><option value="">既定の入力</option></select><button id="mic" class="big">マイク開始</button></div>
+<div id="boxSmp" hidden><div class="row"><label>音声</label><select id="selSmp"><option value="m1">歌声メロディ（約7秒）</option><option value="m2">ロングトーン（約6秒）</option></select><button class="big" id="play">再生（ループ）</button></div>
+<div class="row"><label>ファイル</label><input type="file" id="smpFile" accept="audio/*"></div></div>
+<div class="row"><label>出力</label><select id="selOut"><option value="">既定の出力</option></select><button class="big" id="refDev">更新</button></div>
+<div class="row"><label>原音</label><input type="range" id="dry" max="100" value="40"><label>ハモり</label><input type="range" id="hv" max="100" value="80"></div>
+<div class="row"><label>広がり</label><input type="range" id="wd" max="100" value="60"><label>残響</label><input type="range" id="rv" max="100" value="20"></div>
+<div class="row"><label>音量</label><input type="range" id="vol" max="100" value="80"></div>
+<div class="hint" id="micMsg">入力＝イヤホンのマイク、出力＝スマホのスピーカー等に分ければハウリングしません。Bluetoothは遅延が増えます。</div></section>
 <section><h2>ハーモニー</h2>
 <div class="row"><label>声数</label><div class="seg" data-k="voices"><button data-v="2">2声</button><button data-v="3">3声</button><button data-v="4">4声</button></div></div>
 <div class="row"><label>方式</label><div class="seg" data-k="mode"><button data-v="man">鍵盤</button><button data-v="par">平行</button><button data-v="scale">スケール</button><button data-v="chord">コード</button></div></div>
@@ -99,7 +107,7 @@ const CT={'':[0,4,7],'m':[0,3,7],'7':[0,4,7,10],'M7':[0,4,7,11],'m7':[0,3,7,10],
 const TM={};for(const t in CT)TM[[...new Set(CT[t].map(x=>x%12))].sort((a,b)=>a-b).join()]=t;
 const PRE=[['王道 4-5-3-6',[[5,'M7'],[7,'7'],[4,'m7'],[9,'m']]],['1-5-6-4',[[0,''],[7,''],[9,'m'],[5,'']]],['ジャズ 2-5-1-6',[[2,'m9'],[7,'13'],[0,'M9'],[9,'m7♭5']]],['1-6-2-5 (7th)',[[0,'M7'],[9,'m7'],[2,'m7'],[7,'7']]],['短調 1-♭7-♭6-♭7',[[0,'m'],[10,''],[8,''],[10,'']]],['ゴスペル風',[[0,'add9'],[5,'M9'],[2,'m9'],[7,'7sus4']]]];
 const TG=['なし','周波数','鋭さ','ハモり音量','ピッチ'];
-const S={voices:3,mode:'chord',dir:-1,par:0,key:0,minor:false,slots:[],active:0,preset:0,auto:true,bpm:80,beats:2,edit:false,oct:0,cam:false,ftype:'lowpass',cut:.75,q:.1,hv:.8,dry:.4,vib:60,map:{hy:1,hx:3,mo:2}};
+const S={wd:.6,rv:.2,src:'mic',out:'',vol:.8,voices:3,mode:'chord',dir:-1,par:0,key:0,minor:false,slots:[],active:0,preset:0,auto:true,bpm:80,beats:2,edit:false,oct:0,cam:false,ftype:'lowpass',cut:.75,q:.1,hv:.8,dry:.4,vib:60,map:{hy:1,hx:3,mo:2}};
 let E={};
 /* ---- chords ---- */
 const setSlot=(i,r,t)=>S.slots[i]={r,t,pcs:CT[t].map(x=>(r+x)%12),name:NN[r]+t};
@@ -119,17 +127,102 @@ function harmonize(m){
   let i=0;while(i<L.length-1&&L[i]<m)i++;return ks.map(k=>L[Math.min(L.length-1,i+k)]);
 }
 /* ---- audio: mic → formant-preserving PSOLA ---- */
-const MASK=16383,OM=8191,IR=new Float32Array(MASK+1),AR=new Float32Array(OM+1);
+const MASK=16383,OM=8191,IR=new Float32Array(MASK+1),AR=[0,1,2].map(()=>new Float32Array(OM+1));
 let ctx,filt,master,sp,src,stream,inPos=0,f0=200,T=240,voiced=false,miss=9,curM=60,harm=[],lastSig='';
 const V=[0,1,2].map(()=>({next:0,r:1,g:0,tr:1,tg:0,bend:0,vd:0}));
 const touches=new Set();
 function initAudio(){
   if(ctx)return;
   ctx=new (window.AudioContext||window.webkitAudioContext)();T=ctx.sampleRate/200;
-  filt=ctx.createBiquadFilter();master=ctx.createGain();master.gain.value=.8;
+  filt=ctx.createBiquadFilter();master=ctx.createGain();master.gain.value=S.vol;
   const comp=ctx.createDynamicsCompressor();
-  sp=ctx.createScriptProcessor(1024,1,1);sp.onaudioprocess=proc;
-  sp.connect(filt);filt.connect(master);master.connect(comp);comp.connect(ctx.destination);applyFilter();
+  sp=ctx.createScriptProcessor(1024,1,4);sp.onaudioprocess=proc;
+  const spl=ctx.createChannelSplitter(4);sp.connect(spl);
+  pans=[0,1,2,3].map(i=>{const p=ctx.createStereoPanner();spl.connect(p,i);p.connect(filt);return p});
+  rev=ctx.createConvolver();rev.buffer=mkIR();revG=ctx.createGain();filt.connect(revG);revG.connect(rev);rev.connect(master);
+  filt.connect(master);master.connect(comp);comp.connect(ctx.destination);applyFilter();applySink();applyFx();
+}
+let osc,og,pans,rev,revG;
+function setSource(){
+  stopSmp();
+  if(S.src==='mic'){stopOsc();$('micMsg').textContent='「マイク開始」を押すと声にハモりが付きます。';return}
+  micStop();
+  if(S.src==='smp'){stopOsc();$('micMsg').textContent='「再生」を押すとサンプルがループし、ハモりが付きます。音声ファイルも読み込めます。';return}
+  initAudio();ctx.resume();
+  if(!osc){osc=ctx.createOscillator();og=ctx.createGain();og.gain.value=0;osc.frequency.value=220;osc.connect(og);og.connect(sp);osc.start()}
+  osc.type=S.src==='saw'?'sawtooth':'sine';
+  $('micMsg').textContent='鍵盤を押すと音源が鳴り、ハモりが付きます。横スライド＝ピッチ、上スライド＝ビブラート。';
+}
+const FM={a:[800,1200,2800],i:[300,2300,3000],u:[350,1300,2500],e:[500,1900,2600],o:[450,800,2600]};
+const SM={m1:[[55,1,'a'],[59,1,'o'],[62,1,'a'],[59,1,'e'],[60,1,'i'],[57,1,'u'],[55,1,'o'],[55,2,'a']],m2:[[57,4,'a'],[60,4,'o']]};
+const SB={};let smpSrc=null,smpBusy=false;
+async function genVoice(k){
+  const sr=44100,bt=.75,M=SM[k],len=M.reduce((a,n)=>a+n[1],0)*bt+.3,oc=new OfflineAudioContext(1,Math.ceil(len*sr),sr);
+  const o=oc.createOscillator(),lf=oc.createOscillator(),lg=oc.createGain(),env=oc.createGain(),mix=oc.createGain();
+  o.type='sawtooth';o.frequency.value=440*Math.pow(2,(M[0][0]-69)/12);lf.frequency.value=5.2;lg.gain.value=12;lf.connect(lg);lg.connect(o.detune);o.connect(env);
+  const fs=[0,1,2].map(i=>{const f=oc.createBiquadFilter();f.type='bandpass';f.Q.value=[6,8,10][i];const g=oc.createGain();g.gain.value=[1,.7,.4][i];env.connect(f);f.connect(g);g.connect(mix);return f});
+  mix.connect(oc.destination);env.gain.value=0;
+  let t=.05;
+  M.forEach(([m,b,v])=>{
+    const d=b*bt,f=440*Math.pow(2,(m-69)/12);
+    o.frequency.setTargetAtTime(f,t,.03);fs.forEach((x,i)=>x.frequency.setTargetAtTime(FM[v][i],t,.04));
+    env.gain.setTargetAtTime(1,t,.03);env.gain.setTargetAtTime(.3,t+d-.07,.02);t+=d;
+  });
+  env.gain.setTargetAtTime(0,t-.07,.05);
+  o.start();lf.start();
+  const r=await oc.startRendering(),ch=r.getChannelData(0);let pk=0;for(let i=0;i<ch.length;i++)pk=Math.max(pk,Math.abs(ch[i]));
+  const sc=pk?.6/pk:1;for(let i=0;i<ch.length;i++)ch[i]*=sc;return r;
+}
+async function toggleSmp(){
+  if(smpSrc){stopSmp();return}
+  if(smpBusy)return;smpBusy=true;
+  try{
+    initAudio();await ctx.resume();
+    const k=$('selSmp').value;
+    if(!SB[k]){$('micMsg').textContent='サンプルを生成中…';SB[k]=await genVoice(k)}
+    if(S.src!=='smp')return;
+    const b=SB[k];smpSrc=ctx.createBufferSource();smpSrc.buffer=b;smpSrc.loop=true;smpSrc.loopEnd=Math.min(b.duration,20);smpSrc.connect(sp);smpSrc.start();
+    $('play').textContent='停止';$('play').classList.add('on');$('micMsg').textContent='ループ再生中。ハモりが付きます。';
+  }catch(err){$('micMsg').textContent='サンプルを再生できません（'+err.name+'）'}
+  finally{smpBusy=false}
+}
+function stopSmp(){
+  if(smpSrc){try{smpSrc.stop()}catch(e){}smpSrc.disconnect();smpSrc=null}
+  $('play').textContent='再生（ループ）';$('play').classList.remove('on');
+}
+async function loadFile(e){
+  const f=e.target.files[0];if(!f)return;
+  try{
+    initAudio();SB.file=await ctx.decodeAudioData(await f.arrayBuffer());
+    let o=[...$('selSmp').options].find(x=>x.value==='file');if(!o){o=new Option('','file');$('selSmp').add(o)}
+    o.textContent=f.name.slice(0,18);$('selSmp').value='file';stopSmp();toggleSmp();
+  }catch(err){$('micMsg').textContent='音声ファイルを読み込めません（'+err.name+'）'}
+}
+function stopOsc(){if(osc){osc.stop();osc.disconnect();og.disconnect();osc=og=null}}
+function srcCtl(t){
+  if(!osc)return;const c=ctx.currentTime;
+  if(t)osc.frequency.value=440*Math.pow(2,(t.midi-69)/12+(t.bend+t.vib*S.vib*Math.sin(6.283*5.5*c))/1200);
+  og.gain.setTargetAtTime(t?.5:0,c,.015);
+}
+async function applySink(){
+  if(!ctx||!ctx.setSinkId)return;
+  try{await ctx.setSinkId(S.out||'')}catch(e){$('micMsg').textContent='出力先を切り替えできません（'+e.name+'）'}
+}
+async function listDevs(){
+  try{
+    const ds=await navigator.mediaDevices.enumerateDevices();
+    const fill=(el,k,def,cur)=>{el.innerHTML='<option value="">'+def+'</option>'+ds.filter(d=>d.kind===k&&d.deviceId&&d.deviceId!=='default').map((d,i)=>'<option value="'+d.deviceId+'">'+(d.label||(k==='audioinput'?'マイク':'スピーカー')+(i+1))+'</option>').join('');el.value=[...el.options].some(o=>o.value===cur)?cur:''};
+    fill($('selDev'),'audioinput','既定の入力',$('selDev').value);
+    fill($('selOut'),'audiooutput','既定の出力',S.out);
+  }catch(e){}
+  const ok=!!(window.AudioContext&&AudioContext.prototype.setSinkId);
+  $('selOut').disabled=!ok;if(!ok)$('selOut').options[0].textContent='端末の設定に従う（このブラウザでは切替不可）';
+}
+function mkIR(){const sr=ctx.sampleRate,L=Math.floor(sr*1.8),b=ctx.createBuffer(2,L,sr);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/L,3)}return b}
+function applyFx(){
+  if(!ctx||!pans)return;const t=ctx.currentTime,P=[0,-1,1,0];
+  pans.forEach((p,i)=>p.pan.setTargetAtTime(P[i]*S.wd,t,.03));
+  revG.gain.setTargetAtTime(S.rv*.8,t,.05);
 }
 function applyFilter(){
   if(!ctx)return;const t=ctx.currentTime;
@@ -151,15 +244,24 @@ function detect(end){
   }
   return 0;
 }
+let cf=0,cn=0,fc=0;
 function proc(e){
   const inp=e.inputBuffer.getChannelData(0),out=e.outputBuffer.getChannelData(0),N=inp.length,s=inPos,sr=ctx.sampleRate;
   for(let i=0;i<N;i++)IR[(s+i)&MASK]=inp[i];
   inPos=s+N;const end=inPos,f=detect(end);
-  if(f){miss=0;f0=voiced?f0*.5+f*.5:f;voiced=true;T=sr/f0;const m=69+12*Math.log2(f0/440);if(Math.abs(m-curM)>.65)curM=Math.round(m)}
+  if(f){
+    miss=0;let fx=f;
+    if(voiced){
+      const st=12*Math.log2(f/f0),k=Math.round(st/12);
+      if(k&&Math.abs(st-12*k)<1.5){if(++fc<7)fx=f/Math.pow(2,k);else{fc=0;voiced=false}}
+      else{fc=0;if(Math.abs(st)>4){if(cn&&Math.abs(12*Math.log2(f/cf))<1.5)cn++;else{cf=f;cn=1}if(cn>=4){cn=0;voiced=false}else fx=0}else cn=0}
+    }
+    if(fx){f0=voiced?f0*.5+fx*.5:fx;voiced=true;T=sr/f0;const m=69+12*Math.log2(f0/440);if(Math.abs(m-curM)>.65)curM=Math.round(m)}
+  }
   else if(++miss>3)voiced=false;
-  const tb=[...touches],N1=S.voices-1,man=S.mode==='man';
+  const os=S.src==='sine'||S.src==='saw',ta=[...touches],mt=os?ta[0]:null,tb=os?ta.slice(1):ta,N1=S.voices-1,man=S.mode==='man';
   harm=voiced&&!man?harmonize(curM):[];
-  let gb=0,gv=0;tb.forEach(t=>{gb+=t.bend/tb.length;gv=Math.max(gv,t.vib)});
+  let gb=0,gv=0;tb.forEach(t=>{gb+=t.bend/tb.length;gv=Math.max(gv,t.vib)});if(os){gb=0;gv=0;srcCtl(mt)}
   for(let i=0;i<3;i++){
     const v=V[i];let tr=1,on=false,bend=gb,vd=gv;
     if(i<N1){
@@ -179,13 +281,24 @@ function proc(e){
       let c=c0,bv=0;
       for(let k=-h;k<=h;k++){const a=Math.abs(IR[(c0+k)&MASK]);if(a>bv){bv=a;c=c0+k}}
       const g=v.g*Ts/Lw;
-      for(let k=Math.max(-Lw,s-p);k<=Lw;k++)AR[(p+k)&OM]+=g*(.5+.5*Math.cos(Math.PI*k/Lw))*IR[(c+k)&MASK];
+      for(let k=Math.max(-Lw,s-p);k<=Lw;k++)AR[i][(p+k)&OM]+=g*(.5+.5*Math.cos(Math.PI*k/Lw))*IR[(c+k)&MASK];
       v.next+=Ts;
     }
   }
-  for(let i=0;i<N;i++){const j=(s+i)&OM;out[i]=AR[j]+S.dry*inp[i];AR[j]=0}
+  const o1=e.outputBuffer.getChannelData(1),o2=e.outputBuffer.getChannelData(2),o3=e.outputBuffer.getChannelData(3);
+  for(let i=0;i<N;i++){const j=(s+i)&OM;out[i]=S.dry*inp[i];o1[i]=AR[0][j];o2[i]=AR[1][j];o3[i]=AR[2][j];AR[0][j]=AR[1][j]=AR[2][j]=0}
   const sig=(voiced?curM:-1)+'|'+harm+'|'+tb.map(t=>t.midi);
   if(sig!==lastSig){lastSig=sig;marks()}
+}
+async function denyMsg(k){
+  const n=k==='cam'?'camera':'microphone',j=k==='cam'?'カメラ':'マイク';
+  let st='',bl=false;
+  try{st=(await navigator.permissions.query({name:n})).state}catch(e){}
+  try{const fp=document.featurePolicy||document.permissionsPolicy;bl=!!fp&&!fp.allowsFeature(n)}catch(e){}
+  if(bl)return j+'を使えません：このページを埋め込んでいる側（Claudeアプリ等）が'+j+'を許可していません。ページ側では直せないので、ダウンロードしたファイルをChrome/Safariで開くか、https で公開したURLを開いてください。';
+  if(st==='denied')return j+'がこのサイトで拒否されています。ブラウザのサイト設定で許可し、端末の設定でもそのブラウザに'+j+'を許可してください。';
+  if(window.top!==window)return j+'を使えません：埋め込み表示では許可ダイアログが出ないことがあります。単体のページとして開いてください。';
+  return j+'が許可されていません。端末の設定でこのブラウザの'+j+'を許可し、再読み込みしてください。';
 }
 async function micStart(){
   const msg=$('micMsg');
@@ -194,12 +307,10 @@ async function micStart(){
     if(stream)stream.getTracks().forEach(t=>t.stop());
     const id=$('selDev').value;
     stream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}});
-    const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput'),cur=stream.getAudioTracks()[0].getSettings().deviceId;
-    $('selDev').innerHTML='<option value="">既定の入力</option>'+ds.map(d=>`<option value="${d.deviceId}">${d.label||'マイク'}</option>`).join('');
-    $('selDev').value=ds.some(d=>d.deviceId===id)?id:'';
+    await listDevs();
     if(src)src.disconnect();src=ctx.createMediaStreamSource(stream);src.connect(sp);
     $('mic').textContent='マイク停止';$('mic').classList.add('on');msg.textContent='入力中。歌う・話すと音程を検出してハモりを付けます。';
-  }catch(err){msg.textContent='マイクを使えません（'+err.name+'）。ブラウザの許可を確認し、埋め込み表示で拒否される場合は新しいタブでこのページを開いてください。'}
+  }catch(err){msg.textContent=err.name==='NotAllowedError'?await denyMsg('mic'):'マイクを使えません（'+err.name+'）。'}
 }
 function micStop(){
   if(src)src.disconnect();if(stream)stream.getTracks().forEach(t=>t.stop());stream=src=null;
@@ -207,6 +318,12 @@ function micStop(){
 }
 $('mic').onclick=()=>stream?micStop():micStart();
 $('selDev').onchange=()=>stream&&micStart();
+$('selOut').onchange=e=>{S.out=e.target.value;applySink()};
+$('refDev').onclick=listDevs;
+$('play').onclick=toggleSmp;$('smpFile').onchange=loadFile;$('selSmp').onchange=()=>{if(smpSrc){stopSmp();toggleSmp()}};
+$('vol').oninput=e=>{S.vol=e.target.value/100;if(master)master.gain.value=S.vol};
+$('wd').oninput=e=>{S.wd=e.target.value/100;applyFx()};$('rv').oninput=e=>{S.rv=e.target.value/100;applyFx()};
+if(navigator.mediaDevices)navigator.mediaDevices.ondevicechange=listDevs;
 /* ---- keyboard ---- */
 const kb=$('kb'),keyEls=[];
 function build(){
@@ -250,11 +367,12 @@ kb.addEventListener('pointerup',up);kb.addEventListener('pointercancel',up);
 const HINT={man:'押した鍵盤の高さで声をハモらせます（最大声数−1個まで）。横スライド＝ピッチ、上スライド＝ビブラート。',par:'歌った音から固定の音程で付けます。鍵盤のスライドは全体のピッチ／ビブラートになります。',scale:'キーと調に沿って歌った音から3度重ねで付けます。',chord:'選択中のコードの構成音から、歌った音に近い音を選んで付けます。'};
 function syncSeg(){
   document.querySelectorAll('.seg[data-k]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(S[s.dataset.k])===b.dataset.v)));
-  $('rowPar').hidden=S.mode!=='par';$('rowKey').hidden=S.mode==='par'||S.mode==='man';$('chordBox').hidden=S.mode!=='chord';$('modeHint').textContent=HINT[S.mode];
+  $('rowMic').hidden=S.src!=='mic';$('boxSmp').hidden=S.src!=='smp';$('rowPar').hidden=S.mode!=='par';$('rowKey').hidden=S.mode==='par'||S.mode==='man';$('chordBox').hidden=S.mode!=='chord';$('modeHint').textContent=HINT[S.mode]+((S.src==='sine'||S.src==='saw')?' 音源が波形のときは、最初に押した鍵が音源の音程になります。':'');
 }
 document.querySelectorAll('.seg[data-k]').forEach(s=>s.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;S[s.dataset.k]=isNaN(+v)?v:+v;syncSeg();chordUI();restartTimer();lastSig='';
 }));
+document.querySelector('.seg[data-k=src]').addEventListener('click',e=>{if(e.target.closest('button'))setSource()});
 $('selPar').innerHTML=PAR.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('');
 $('selKey').innerHTML=NN.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
 $('selPre').innerHTML='<option value="-1">（自作）</option>'+PRE.map((p,i)=>`<option value="${i}">${p[0]}</option>`).join('');
@@ -334,9 +452,10 @@ $('cam').onchange=async e=>{
   try{
     cs=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:320,height:240},audio:false});
     vid.srcObject=cs;await vid.play();prev=null;S.cam=true;$('camMsg').textContent='口を閉じた状態で「校正」を押してください。赤枠をタップで口の位置に移動できます。';camLoop();
-  }catch(err){e.target.checked=false;S.cam=false;$('camMsg').textContent='カメラを使えません（'+err.name+'）。許可を確認するか、新しいタブでこのページを開いてください。'}
+  }catch(err){e.target.checked=false;S.cam=false;$('camMsg').textContent=err.name==='NotAllowedError'?await denyMsg('cam'):'カメラを使えません（'+err.name+'）。'}
 };
 document.addEventListener('visibilitychange',()=>{if(document.hidden){touches.clear();ptr.clear()}});
-applyPre();S.active=0;eff();syncSeg();chordUI();build();restartTimer();
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-</script></body></html>
+if(!window.isSecureContext||!navigator.mediaDevices)$('micMsg').textContent='この環境ではマイク・カメラを使えません。https で開いたブラウザ（Chrome・Safari など）で開き直してください。';
+listDevs();applyPre();S.active=0;eff();syncSeg();chordUI();build();restartTimer();
+</script><script>if('serviceWorker'in navigator&&/^https?:$/.test(location.protocol))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+</body></html>
